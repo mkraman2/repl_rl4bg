@@ -19,8 +19,9 @@ def main():
     # Environment and wrappers
     env = BloodGlucoseEnv()
     env = POMDPWrapper(env)
-
-    obs_dim = env.observation_space.shape[0]
+    obs, _ = env.reset()
+    # obs_dim = env.observation_space.shape[0]
+    obs_dim = obs.shape[0]
     action_dim = env.action_space.shape[0]
     action_bound = float(env.action_space.high[0])
 
@@ -29,7 +30,9 @@ def main():
 
     num_episodes = 1000
     for episode in range(num_episodes):
-        obs = env.reset()
+        obs, _ = env.reset()
+        print("obs_dim from env:", obs_dim) # Debug
+        print("obs from reset:", obs) # Debug
         episode_reward = 0
         done = False
         while not done:

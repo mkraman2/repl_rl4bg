@@ -8,6 +8,7 @@ from simglucose.patient.t1dpatient import T1DPatient
 from simglucose.sensor.cgm import CGMSensor
 from simglucose.actuator.pump import InsulinPump
 from simglucose.analysis.risk import risk_index
+from simglucose.controller.base import Action
 from datetime import datetime
 from magni import reward_from_risk
 
@@ -48,9 +49,10 @@ class BloodGlucoseEnv(gym.Env):
     def step(self, action):
         # Map action (units of insulin) into simglucose controller interface
         action_value = float(np.clip(action[0], 0.0, 10.0))
-        action_dict = {'bolus': action_value, 'basal': 0.0}
+        # action_dict = {'bolus': action_value, 'basal': 0.0}
 
-        step = self.env.step(action_dict)
+        action_obj = Action(basal=0.0, bolus=action_value)
+        step = self.env.step(action_obj)
         obs = step.observation
         done = step.done
         info = step.info
