@@ -32,8 +32,8 @@ class BloodGlucoseEnv(gym.Env):
 
         # Define Gym-compatible observation and action spaces manually
         self.observation_space = gym.spaces.Box(
-            low=np.array([40.0, 0.0, 0.0], dtype=np.float32),
-            high=np.array([400.0, 150.0, 15.0], dtype=np.float32),
+            low=np.array([40.0], dtype=np.float32),
+            high=np.array([400.0], dtype=np.float32),
             dtype=np.float32
         )
         self.action_space = gym.spaces.Box(
@@ -54,7 +54,6 @@ class BloodGlucoseEnv(gym.Env):
         action_obj = Action(basal=0.0, bolus=action_value)
         step = self.env.step(action_obj)
         obs = step.observation
-        done = step.done
         info = step.info
         glucose = obs.CGM
         reward = reward_from_risk(glucose)
@@ -62,10 +61,10 @@ class BloodGlucoseEnv(gym.Env):
         terminated = step.done
         truncated = False
         
-        return self._process_obs(obs), reward, done, info
+        return self._process_obs(obs), reward, terminated, truncated, info
     
     def _process_obs(self, obs):
-        # Return a float32 array of [CGM, insulin]
+        # Return a float32 array of [CGM] (single val)
         return np.array([
             obs.CGM,
         ], dtype=np.float32)

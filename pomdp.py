@@ -1,5 +1,3 @@
-# pomdp.py
-
 import gym
 import numpy as np
 from collections import deque
@@ -17,8 +15,8 @@ class POMDPWrapper(gym.ObservationWrapper):
         )
         self.history = deque(maxlen=history_length)
 
-    def reset(self):
-        obs, info = self.env.reset()
+    def reset(self, **kwargs):
+        obs, info = self.env.reset(**kwargs)
         self.history.clear()
         for _ in range(self.history_length - 1):
             self.history.append(np.zeros(self.obs_dim, dtype=np.float32))
@@ -30,4 +28,6 @@ class POMDPWrapper(gym.ObservationWrapper):
         return self._get_obs()
 
     def _get_obs(self):
+        for i, o in enumerate(self.history): # Debug
+            assert o.shape == (self.obs_dim,), f"History[{i}] shape mismatch: {o.shape} != {(self.obs_dim,)}" # Debug
         return np.concatenate(self.history)

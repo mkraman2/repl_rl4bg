@@ -64,9 +64,9 @@ class SACAgent:
         self.batch_size = 256
 
     def select_action(self, state):
-        print("select_action - raw state type/shape:", type(state), np.shape(state)) # Debug
+        # print("select_action - raw state type/shape:", type(state), np.shape(state)) # Debug
         state = torch.FloatTensor(state).to(self.device).unsqueeze(0)
-        print("select_action - tensor shape:", state.shape)  # Debug   
+        # print("select_action - tensor shape:", state.shape)  # Debug   
         with torch.no_grad():
             action = self.actor(state)
         return action.cpu().numpy()[0]
