@@ -37,7 +37,7 @@ class MLP(nn.Module):
         return self.net(x)
 
 class SACAgent:
-    def __init__(self, obs_dim, action_dim, action_bound, device):
+    def __init__(self, obs_dim, action_dim, action_bound, device, lr=3e-4, alpha=0.2):
         self.obs_dim = obs_dim
         self.action_dim = action_dim
         self.action_bound = action_bound
@@ -60,7 +60,7 @@ class SACAgent:
 
         self.gamma = 0.99
         self.tau = 0.005
-        self.alpha = 0.2
+        self.alpha = alpha
         self.batch_size = 256
 
     def select_action(self, state):

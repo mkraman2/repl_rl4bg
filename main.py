@@ -32,16 +32,15 @@ def main():
     env = POMDPWrapper(env)
 
     obs, _ = env.reset()
-    # obs_dim = env.observation_space.shape[0]
     obs_dim = obs.shape[0]
     action_dim = env.action_space.shape[0]
     action_bound = float(env.action_space.high[0])
 
     # SAC Agent
-    agent = SACAgent(obs_dim, action_dim, action_bound, device)
-
+    agent = SACAgent(obs_dim, action_dim, action_bound, device,
+                     lr=args.lr, alpha=args.alpha)
     num_episodes = 1000
-    for episode in range(num_episodes):
+    for episode in range(args.episodes):
         obs, _ = env.reset()
         # print("obs_dim from env:", obs_dim) # Debug
         # print("obs from reset:", obs) # Debug
