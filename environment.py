@@ -38,7 +38,7 @@ class BloodGlucoseEnv(gym.Env):
         )
         self.action_space = gym.spaces.Box(
             low=np.array([0.0]),
-            high=np.array([10.0]),
+            high=np.array([0.25]),
             dtype=np.float32
         )
 
@@ -48,7 +48,7 @@ class BloodGlucoseEnv(gym.Env):
 
     def step(self, action):
         # Map action (units of insulin) into simglucose controller interface
-        action_value = float(np.clip(action[0], 0.0, 10.0))
+        action_value = float(np.clip(action[0], 0.0, 0.25))
         # action_dict = {'bolus': action_value, 'basal': 0.0}
 
         action_obj = Action(basal=0.0, bolus=action_value)
