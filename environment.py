@@ -32,8 +32,8 @@ class BloodGlucoseEnv(gym.Env):
 
         # Define Gym-compatible observation and action spaces manually
         self.observation_space = gym.spaces.Box(
-            low=np.array([40.0], dtype=np.float32),
-            high=np.array([400.0], dtype=np.float32),
+            low=np.array([10.0], dtype=np.float32),
+            high=np.array([600.0], dtype=np.float32),
             dtype=np.float32
         )
         self.action_space = gym.spaces.Box(
