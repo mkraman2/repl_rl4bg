@@ -52,15 +52,13 @@ class TransformerActor(nn.Module):
         return self.output(x[:, -1])
 
 class SACAgent:
-    def __init__(self, obs_dim, action_dim, action_bound, device, lr=3e-4, alpha=0.2, use_transformer=False, history_length=10):
+    def __init__(self, obs_dim, action_dim, action_bound, device, lr=3e-4, alpha=0.2, use_transformer=False, feature_dim=None, history_length=None):
         self.use_transformer = use_transformer
-        self.history_length = history_length
 
         if use_transformer:
-            assert obs_dim % history_length == 0, "obs_dim must be divisible by history_length"
-            feature_dim = obs_dim // history_length
-            obs_dim = history_length * feature_dim  # ensure consistent reshaping
+            assert feature_dim is not None and history_length is not None, "Transformer model requires feature_dim and history_length"
             self.actor = TransformerActor(seq_len=history_length, feature_dim=feature_dim, output_dim=action_dim).to(device)
+            obs_dim = feature_dim * history_length
         else:
             self.actor = MLP(obs_dim, action_dim).to(device)
 

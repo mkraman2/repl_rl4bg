@@ -1,5 +1,3 @@
-# sac_bg_control/main.py
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -15,8 +13,6 @@ from plot_logs import plot_from_log
 import gymnasium as gym
 import sys
 import os
-import csv
-
 import argparse
 
 def parse_args():
@@ -34,22 +30,23 @@ def main():
     args = parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # Environment and wrappers
     env = BloodGlucoseEnv()
-    env = POMDPWrapper(env)
+    env = POMDPWrapper(env, history_length=args.history_length)
 
     obs, _ = env.reset()
     obs_dim = obs.shape[0]
     action_dim = env.action_space.shape[0]
     action_bound = float(env.action_space.high[0])
 
-    # Create Agent (sac or pid)
+    feature_dim = obs_dim // args.history_length
+
     if args.controller == "sac":
         agent = SACAgent(obs_dim, action_dim, action_bound, device,
-                        lr=args.lr, alpha=args.alpha)
+                         lr=args.lr, alpha=args.alpha)
     elif args.controller == "sac-t":
         agent = SACAgent(obs_dim, action_dim, action_bound, device,
-                        lr=args.lr, alpha=args.alpha, use_transformer=True, history_length=args.history_length)        
+                         lr=args.lr, alpha=args.alpha, use_transformer=True,
+                         feature_dim=feature_dim, history_length=args.history_length)
     else:
         agent = PIDController(Kp=0.05, Ki=0.001, Kd=0.01)
 
@@ -57,7 +54,6 @@ def main():
     if os.path.exists(log_file):
         os.remove(log_file)
 
-    # Create logger
     logger = GlucoseLogger()
 
     for episode in range(args.episodes):
@@ -65,15 +61,18 @@ def main():
         episode_reward = 0
         terminated = False
         t = 0
+
         while not terminated:
             if args.controller in ["sac", "sac-t"]:
                 action = agent.select_action(obs)
             else:
                 action = np.array([agent.compute_action(obs[0])])
+           
+            action = np.clip(action, 0.0, action_bound)  # Ensures non-negative insulin dosing
 
             next_obs, reward, terminated, truncated, info = env.step(action)
             glucose = info.get("CGM", next_obs[-1])
-            insulin = float(action[0].item())
+            insulin = float(action[0])
             logger.log_step(episode, t, glucose, insulin, reward)
 
             if args.controller in ["sac", "sac-t"]:
@@ -87,7 +86,6 @@ def main():
         print(f"Episode {episode}: Reward = {episode_reward:.2f}")
 
     plot_from_log()
-
 
 if __name__ == "__main__":
     main()
