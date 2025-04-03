@@ -25,8 +25,8 @@ def parse_args():
     parser.add_argument('--alpha', type=float, default=0.2, help='Entropy temperature')
     parser.add_argument('--history-length', type=int, default=10, help='POMDP history length')
     parser.add_argument('--episodes', type=int, default=1000, help='Training episodes')
-    parser.add_argument("--controller", choices=["sac", "pid"], default="sac",
-                        help="Choose the controller type: 'sac' or 'pid'")
+    parser.add_argument("--controller", choices=["sac", "sac-t", "pid"], default="sac",
+                        help="Choose the controller type: 'sac', 'sac-t', 'pid'")
     return parser.parse_args()
 
 def main():
@@ -47,6 +47,9 @@ def main():
     if args.controller == "sac":
         agent = SACAgent(obs_dim, action_dim, action_bound, device,
                         lr=args.lr, alpha=args.alpha)
+    elif args.controller == "sac-t":
+        agent = SACAgent(obs_dim, action_dim, action_bound, device,
+                        lr=args.lr, alpha=args.alpha, use_transformer=True, history_length=args.history_length)        
     else:
         agent = PIDController(Kp=0.05, Ki=0.001, Kd=0.01)
 
@@ -63,7 +66,7 @@ def main():
         terminated = False
         t = 0
         while not terminated:
-            if args.controller == "sac":
+            if args.controller in ["sac", "sac-t"]:
                 action = agent.select_action(obs)
             else:
                 action = np.array([agent.compute_action(obs[0])])
@@ -73,7 +76,7 @@ def main():
             insulin = float(action[0].item())
             logger.log_step(episode, t, glucose, insulin, reward)
 
-            if args.controller == "sac":
+            if args.controller in ["sac", "sac-t"]:
                 agent.replay_buffer.push(obs, action, reward, next_obs, terminated)
                 agent.update()
 
