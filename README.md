@@ -30,7 +30,8 @@ The framework is based on the **Soft Actor-Critic (SAC)** algorithm, extended wi
 ```bash
 conda create -n glucose_rl python=3.12
 conda activate glucose_rl
-pip install -r requirements.txt
+pip install torch numpy matplotlib cloudpickle scipy pandas typing-extensions gym==0.26.2 gymnasium>=0.29
+pip install --no-deps simglucose==0.2.11
 ```
 
 ### 2. Run Training
@@ -49,7 +50,7 @@ python main.py --controller sac
 
 #### Example (Transformer Agent):
 ```bash
-python main.py --lr 5e-3 --alpha 1.2 --history-length 40 --episodes 200 --controller sac-t
+python main.py --lr 5e-3 --alpha 1.2 --history-length 40 --episodes 200 --controller "sac-t"
 ```
 
 #### Example (PID Controller):
