@@ -21,7 +21,7 @@ class ReplayBuffer:
         return len(self.buffer)
 
 class MLP(nn.Module):
-    def __init__(self, input_dim, output_dim, hidden_dim=64):
+    def __init__(self, input_dim, output_dim, hidden_dim=32):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
@@ -35,7 +35,7 @@ class MLP(nn.Module):
         return self.net(x)
 
 class TransformerActor(nn.Module):
-    def __init__(self, seq_len, feature_dim, output_dim, hidden_dim=64, nhead=4, num_layers=2):
+    def __init__(self, seq_len, feature_dim, output_dim, hidden_dim=32, nhead=4, num_layers=2):
         super().__init__()
         self.seq_len = seq_len
         self.feature_dim = feature_dim
