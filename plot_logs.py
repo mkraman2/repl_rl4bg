@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def plot_from_log(log_path="glucose_log.csv"):
+def plot_from_log(log_path="glucose_log.csv", history_length=10):  # 👈 Add history_length as argument
     df = pd.read_csv(log_path)
 
     # New: If 'env_id' doesn't exist (old CSVs), create a dummy one
@@ -23,6 +23,11 @@ def plot_from_log(log_path="glucose_log.csv"):
     best_episode, best_env = best_idx
 
     best_data = df[(df["episode"] == best_episode) & (df["env_id"] == best_env)]
+
+    # === NEW ===
+    # Skip the warmup history_length timesteps
+    best_data = best_data[best_data["timestep"] >= history_length]
+
     timesteps = best_data["timestep"]
     glucose = best_data["glucose"]
     insulin = best_data["insulin"]
@@ -71,6 +76,6 @@ def plot_from_log(log_path="glucose_log.csv"):
     ax2.set_ylabel("Insulin (U)", color='tab:purple')
     ax2.tick_params(axis='y', labelcolor='tab:purple')
 
-    plt.title(f"Best Episode {best_episode}, Env {best_env} - CGM & Insulin")
+    plt.title(f"Best Episode {best_episode}, Env {best_env} - CGM & Insulin (No Warmup)")
     plt.tight_layout()
     plt.show()

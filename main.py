@@ -1,7 +1,14 @@
+# main.py
+
 import torch
+import numpy as np
+import random
+import os
+import sys
+import argparse
+
 import torch.nn as nn
 import torch.optim as optim
-import numpy as np
 
 from sac import SACAgent
 from environment import BloodGlucoseEnv
@@ -13,11 +20,6 @@ from plot_logs import plot_from_log
 import gymnasium as gym
 from gymnasium.vector import AsyncVectorEnv
 
-import sys
-import os
-import argparse
-import random
-
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--lr', type=float, default=3e-4, help='Learning rate')
@@ -28,7 +30,6 @@ def parse_args():
                         help="Choose the controller type: 'sac', 'sac-t', 'pid'")
     parser.add_argument('--num-envs', type=int, default=32, help='Number of parallel environments')
     parser.add_argument('--dnn-hidden-size', type=int, default=128, help='DNN hidden layer size')
-
     return parser.parse_args()
 
 def make_env_fn(patient_name, history_length):
@@ -90,10 +91,14 @@ def main():
         t = 0
 
         while not np.all(dones):
-            if args.controller in ["sac", "sac-t"]:
-                actions = agent.select_action_batch(obs)
+            # Warmup: force no insulin for the first history_length steps
+            if t < args.history_length:
+                actions = np.zeros((args.num_envs, action_dim))
             else:
-                actions = np.array([[agent.compute_action(o[0])] for o in obs])
+                if args.controller in ["sac", "sac-t"]:
+                    actions = agent.select_action_batch(obs)
+                else:
+                    actions = np.array([[agent.compute_action(o[0])] for o in obs])
 
             actions = np.clip(actions, 0.0, action_bound)
 
@@ -111,13 +116,11 @@ def main():
 
                     insulin = float(actions[i][0])
                     logger.log_step(episode, t, glucose, insulin, rewards[i], env_id=i)
-                
-                    # if episode == 0 and t < 10:  # first few steps
-                        # print(f"[Debug] Action: {actions[i][0]}, Applied insulin: {float(actions[i][0])}")
 
-            # Multiple gradient steps per environment step
-            for _ in range(gradient_steps_per_env_step):
-                agent.update()
+            if t >= args.history_length:
+                # Only update if enough history
+                for _ in range(gradient_steps_per_env_step):
+                    agent.update()
 
             obs = next_obs
             dones |= terminated
@@ -126,7 +129,7 @@ def main():
 
         print(f"Episode {episode}: Average Reward = {np.mean(episode_rewards):.2f}")
 
-    plot_from_log()
+    plot_from_log(history_length=args.history_length)
 
 if __name__ == "__main__":
     main()

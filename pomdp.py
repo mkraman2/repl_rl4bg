@@ -1,34 +1,45 @@
-import gymnasium as gym
-import gymnasium.spaces as spaces
-import numpy as np
-from collections import deque
+# pomdp.py
 
-class POMDPWrapper(gym.ObservationWrapper):
+import gymnasium as gym
+import numpy as np
+
+class POMDPWrapper(gym.Wrapper):
     def __init__(self, env, history_length=10):
         super().__init__(env)
         self.history_length = history_length
-        self.obs_dim = env.observation_space.shape[0]
+        self.feature_dim = env.observation_space.shape[0]
+
+        # New observation space: (feature_dim * history_length,)
+        obs_low = np.tile(env.observation_space.low, history_length)
+        obs_high = np.tile(env.observation_space.high, history_length)
+
         self.observation_space = gym.spaces.Box(
-            low=-np.inf,
-            high=np.inf,
-            shape=(self.obs_dim * history_length,),
-            dtype=np.float32
+            low=obs_low,
+            high=obs_high,
+            dtype=np.float32,
         )
-        self.history = deque(maxlen=history_length)
+
+        self.action_space = env.action_space
+
+        # Initialize history buffer
+        self.history = np.zeros((self.history_length, self.feature_dim), dtype=np.float32)
 
     def reset(self, **kwargs):
         obs, info = self.env.reset(**kwargs)
-        self.history.clear()
-        for _ in range(self.history_length - 1):
-            self.history.append(np.zeros(self.obs_dim, dtype=np.float32))
-        self.history.append(obs)
+
+        # Back-propagate: Fill history with the first real observation
+        self.history = np.tile(obs, (self.history_length, 1))
+
         return self._get_obs(), info
 
-    def observation(self, obs):
-        self.history.append(obs)
-        return self._get_obs()
+    def step(self, action):
+        obs, reward, terminated, truncated, info = self.env.step(action)
+
+        # Shift history and append the new observation
+        self.history = np.roll(self.history, shift=-1, axis=0)
+        self.history[-1] = obs
+
+        return self._get_obs(), reward, terminated, truncated, info
 
     def _get_obs(self):
-        for i, o in enumerate(self.history): # Debug
-            assert o.shape == (self.obs_dim,), f"History[{i}] shape mismatch: {o.shape} != {(self.obs_dim,)}" # Debug
-        return np.concatenate(self.history)
+        return self.history.flatten()
