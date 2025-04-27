@@ -7,9 +7,10 @@ class GlucoseLogger:
         os.makedirs(os.path.dirname(log_path), exist_ok=True) if os.path.dirname(log_path) else None
         with open(self.log_path, mode='w', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow(['episode', 'timestep', 'glucose', 'insulin', 'reward'])
+            writer.writerow(['episode', 'timestep', 'glucose', 'insulin', 'reward', 'env_id'])
 
-    def log_step(self, episode, timestep, glucose, insulin, reward):
+    def log_step(self, episode, timestep, glucose, insulin, reward, env_id=None):
         with open(self.log_path, mode='a', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow([episode, timestep, glucose, insulin, reward])
+            row = [episode, timestep, glucose, insulin, reward, env_id]
+            writer.writerow(row)

@@ -21,7 +21,7 @@ class ReplayBuffer:
         return len(self.buffer)
 
 class MLP(nn.Module):
-    def __init__(self, input_dim, output_dim, hidden_dim=32):
+    def __init__(self, input_dim, output_dim, hidden_dim=512):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
@@ -52,25 +52,25 @@ class TransformerActor(nn.Module):
         return self.output(x[:, -1])
 
 class SACAgent:
-    def __init__(self, obs_dim, action_dim, action_bound, device, lr=3e-4, alpha=0.2, use_transformer=False, feature_dim=None, history_length=None):
+    def __init__(self, obs_dim, action_dim, action_bound, device, lr=3e-4, alpha=0.2, use_transformer=False, feature_dim=None, history_length=None, hidden_dim=512):
         self.use_transformer = use_transformer
 
         if use_transformer:
             assert feature_dim is not None and history_length is not None, "Transformer model requires feature_dim and history_length"
-            self.actor = TransformerActor(seq_len=history_length, feature_dim=feature_dim, output_dim=action_dim).to(device)
+            self.actor = TransformerActor(seq_len=history_length, feature_dim=feature_dim, output_dim=action_dim, hidden_dim=hidden_dim).to(device)
             obs_dim = feature_dim * history_length
         else:
-            self.actor = MLP(obs_dim, action_dim).to(device)
+            self.actor = MLP(obs_dim, action_dim, hidden_dim).to(device)
 
         self.obs_dim = obs_dim
         self.action_dim = action_dim
         self.action_bound = action_bound
         self.device = device
 
-        self.q1 = MLP(obs_dim + action_dim, 1).to(device)
-        self.q2 = MLP(obs_dim + action_dim, 1).to(device)
-        self.target_q1 = MLP(obs_dim + action_dim, 1).to(device)
-        self.target_q2 = MLP(obs_dim + action_dim, 1).to(device)
+        self.q1 = MLP(obs_dim + action_dim, 1, hidden_dim).to(device)
+        self.q2 = MLP(obs_dim + action_dim, 1, hidden_dim).to(device)
+        self.target_q1 = MLP(obs_dim + action_dim, 1, hidden_dim).to(device)
+        self.target_q2 = MLP(obs_dim + action_dim, 1, hidden_dim).to(device)
 
         self.target_q1.load_state_dict(self.q1.state_dict())
         self.target_q2.load_state_dict(self.q2.state_dict())
@@ -84,13 +84,24 @@ class SACAgent:
         self.gamma = 0.99
         self.tau = 0.005
         self.alpha = alpha
-        self.batch_size = 256
+        self.batch_size = 32
 
     def select_action(self, state):
-        state = torch.FloatTensor(state).to(self.device).unsqueeze(0)
+        """Select an action for a single observation."""
+        state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
         with torch.no_grad():
             action = self.actor(state)
-        return action.cpu().numpy()[0]
+        action = action.cpu().numpy()[0]
+        return action
+
+    def select_action_batch(self, obs_batch):
+        """Select actions for a batch of observations."""
+        obs_batch = torch.FloatTensor(obs_batch).to(self.device)
+        with torch.no_grad():
+            actions = self.actor(obs_batch)
+        actions = actions.cpu().numpy()
+        return actions
+
 
     def update(self):
         if len(self.replay_buffer) < self.batch_size:
