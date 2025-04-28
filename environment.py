@@ -18,9 +18,11 @@ class BloodGlucoseEnv(gym.Env):
         super().__init__()
         self.patient_name = patient_name
         self.seed_value = seed
+        self.max_insulin_dose = 2.0 #
         self._build_sim()
 
     def _build_sim(self):
+         
         now = datetime.now()
         random_hour = np.random.randint(0, 24)  # Randomize start hour
         start_time = datetime.combine(now.date(), datetime.min.time()) + timedelta(hours=random_hour)
@@ -37,10 +39,10 @@ class BloodGlucoseEnv(gym.Env):
 
         self.observation_space = gym.spaces.Box(
             low=np.array([10.0, 0.0, 0.0], dtype=np.float32),
-            high=np.array([600.0, 0.5, 100.0], dtype=np.float32)
+            high=np.array([600.0, self.max_insulin_dose, 100.0], dtype=np.float32)
         )
         self.action_space = gym.spaces.Box(
-            low=np.array([0.0]), high=np.array([0.5]), dtype=np.float32)
+            low=np.array([0.0]), high=np.array([self.max_insulin_dose]), dtype=np.float32)
 
     def reset(self, dummy_length=20):
         self.env.reset()
@@ -61,7 +63,7 @@ class BloodGlucoseEnv(gym.Env):
 
 
     def step(self, action):
-        action_value = float(np.clip(action[0], 0.0, 0.5))
+        action_value = float(np.clip(action[0], 0.0, self.max_insulin_dose))
         action_obj = Action(basal=0.0, bolus=action_value)
 
         step = self.env.step(action_obj)
